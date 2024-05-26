@@ -48,3 +48,6 @@ dev:
 
 lint-fix:
 	npm run lint-fix
+
+test-coverage:
+	npm run test-coverage

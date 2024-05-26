@@ -27,6 +27,7 @@
     "src",
     ".eslintrc.cjs",
     "tests/**/*.test.tsx",
+    "tests/**/*.test.ts",
     "vitest.config.ts",
     "vite.config.ts",
     "tests/setup.ts"

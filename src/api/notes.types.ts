@@ -6,3 +6,5 @@ export interface Note {
   parentId: string | null;
   text: string;
 }
+
+export type ErrorRandomized = () => boolean;

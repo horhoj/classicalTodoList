@@ -1,5 +1,5 @@
-import { NOTES_REQUEST_DELAY } from './const';
-import { Delay, GenerateId, Note } from './notes.types';
+import { NOTES_NETWORK_ERROR_RATE, NOTES_REQUEST_DELAY } from './const';
+import { Delay, ErrorRandomized, GenerateId, Note } from './notes.types';
 import { delay } from '~/utils/delay';
 
 const START_ID = 6;
@@ -22,22 +22,32 @@ export const makeGenerateId = (startId: number): GenerateId => {
   };
 };
 
+export const makeErrorRandomized =
+  (rate: number, random = Math.random): ErrorRandomized =>
+  () =>
+    random() < rate;
+
 export class NotesApi {
   public static ERROR_PATCH_NOTE_NOT_FOUND = 'patchNote: note not found';
-  public static ERROR_ADD_NOTE_PARENT_NOT_FOUND =
-    'addNote: parent note not found';
+  public static ERROR_ADD_NOTE_PARENT_NOT_FOUND = 'addNote: parent note not found';
   public static ERROR_DELETE_NOTE_NOT_FOUND = 'deleteNote: note not found';
+  public static ERROR_NETWORK = 'network error';
   private delay: Delay;
   private store: Note[];
   private generateId: GenerateId;
-  public constructor(store: Note[], delay: Delay, generateId: GenerateId) {
+  private errorRandomized: ErrorRandomized;
+  public constructor(store: Note[], delay: Delay, generateId: GenerateId, errorRandomized: ErrorRandomized) {
     this.store = store;
     this.delay = delay;
     this.generateId = generateId;
+    this.errorRandomized = errorRandomized;
   }
 
   private async system() {
     await this.delay();
+    if (this.errorRandomized()) {
+      throw new Error(NotesApi.ERROR_NETWORK);
+    }
   }
 
   public async fetchNotes(parentId: Note['parentId']) {
@@ -104,4 +114,5 @@ export const notesApi = new NotesApi(
   store,
   () => delay(NOTES_REQUEST_DELAY),
   makeGenerateId(START_ID),
+  makeErrorRandomized(NOTES_NETWORK_ERROR_RATE),
 );

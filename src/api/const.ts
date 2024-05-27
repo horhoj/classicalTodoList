@@ -1,1 +1,2 @@
 export const NOTES_REQUEST_DELAY = 1000;
+export const NOTES_NETWORK_ERROR_RATE = 0.2;

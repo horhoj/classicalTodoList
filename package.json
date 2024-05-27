@@ -6,8 +6,8 @@
     "dev": "vite --port=3000",
     "build": "tsc && vite build",
     "serve": "vite preview",
-    "lint-check": "eslint ./src --ext .js,.ts,.tsx,.jsx",
-    "lint-fix": "eslint ./src --ext .js,.ts,.tsx,.jsx  --fix",
+    "lint-check": "eslint ./src ./tests --ext .js,.ts,.tsx,.jsx",
+    "lint-fix": "eslint ./src ./tests --ext .js,.ts,.tsx,.jsx  --fix",
     "type-check": "tsc",
     "test": "vitest",
     "test-coverage": "vitest run --coverage"

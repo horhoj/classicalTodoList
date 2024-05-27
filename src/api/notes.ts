@@ -1,6 +1,8 @@
 import { NOTES_REQUEST_DELAY } from './const';
-import { Delay, Note } from './notes.types';
+import { Delay, GenerateId, Note } from './notes.types';
 import { delay } from '~/utils/delay';
+
+const START_ID = 6;
 
 const store: Note[] = [
   { id: '1', parentId: null, text: 'note 1' },
@@ -11,28 +13,95 @@ const store: Note[] = [
   { id: '6', parentId: '4', text: 'note 6' },
 ];
 
+export const makeGenerateId = (startId: number): GenerateId => {
+  let lastId = startId;
+
+  return () => {
+    lastId++;
+    return lastId.toString();
+  };
+};
+
 export class NotesApi {
-  public static ERROR_PATCH_NOTE_NOT_FOUND = 'note not found';
-  private store: Note[];
+  public static ERROR_PATCH_NOTE_NOT_FOUND = 'patchNote: note not found';
+  public static ERROR_ADD_NOTE_PARENT_NOT_FOUND =
+    'addNote: parent note not found';
+  public static ERROR_DELETE_NOTE_NOT_FOUND = 'deleteNote: note not found';
   private delay: Delay;
-  public constructor(store: Note[], delay: Delay) {
+  private store: Note[];
+  private generateId: GenerateId;
+  public constructor(store: Note[], delay: Delay, generateId: GenerateId) {
     this.store = store;
     this.delay = delay;
+    this.generateId = generateId;
+  }
+
+  private async system() {
+    await this.delay();
   }
 
   public async fetchNotes(parentId: Note['parentId']) {
-    await this.delay();
+    await this.system();
     return this.store.filter((note) => note.parentId === parentId);
   }
 
   public async patchNote(id: Note['id'], text: Note['text']) {
-    await this.delay();
+    await this.system();
     const index = this.store.findIndex((note) => note.id === id);
     if (index === -1) {
       throw new Error(NotesApi.ERROR_PATCH_NOTE_NOT_FOUND);
     }
     this.store[index].text = text;
   }
+
+  public async addNote(parentId: Note['parentId'], text: Note['text']) {
+    await this.system();
+    if (parentId !== null) {
+      const parentIndex = this.store.findIndex((note) => note.id === parentId);
+      if (parentIndex === -1) {
+        throw new Error(NotesApi.ERROR_ADD_NOTE_PARENT_NOT_FOUND);
+      }
+    }
+    const id = this.generateId();
+    this.store.push({ id, parentId, text });
+  }
+
+  public async deleteNote(id: Note['id']) {
+    await this.system();
+    const index = this.store.findIndex((note) => note.id === id);
+    if (index === -1) {
+      throw new Error(NotesApi.ERROR_DELETE_NOTE_NOT_FOUND);
+    }
+
+    const storeChildrenMap: Record<Note['id'], Note['id'][]> = {};
+    this.store.forEach((note) => {
+      storeChildrenMap[note.id] = [];
+    });
+    this.store.forEach((note) => {
+      if (note.parentId !== null) {
+        storeChildrenMap[note.parentId].push(note.id);
+      }
+    });
+
+    const deletedIds = new Set<Note['id']>();
+
+    const stack: Note['id'][] = [id];
+    while (stack.length > 0) {
+      const currentId = stack.shift();
+      if (currentId !== undefined) {
+        const children = storeChildrenMap[currentId];
+        children.forEach((childId) => stack.push(childId));
+        deletedIds.add(currentId);
+      }
+    }
+    const resultNote = this.store.filter((note) => !deletedIds.has(note.id));
+    this.store.splice(0, this.store.length);
+    this.store.push(...resultNote);
+  }
 }
 
-export const notesApi = new NotesApi(store, () => delay(NOTES_REQUEST_DELAY));
+export const notesApi = new NotesApi(
+  store,
+  () => delay(NOTES_REQUEST_DELAY),
+  makeGenerateId(START_ID),
+);

@@ -1,4 +1,5 @@
 export type Delay = () => Promise<void>;
+export type GenerateId = () => string;
 
 export interface Note {
   id: string;
